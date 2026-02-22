@@ -220,6 +220,49 @@ CREATE POLICY "slips_admin_read" ON storage.objects FOR SELECT USING (
 );
 
 -- ============================================================
+-- 10. MIGRATION: Add size column to products
+-- ============================================================
+ALTER TABLE products ADD COLUMN IF NOT EXISTS size TEXT;
+
+-- ============================================================
+-- 11. SITE SETTINGS TABLE (for admin hero/logo customization)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS site_settings (
+  id          TEXT PRIMARY KEY DEFAULT 'main',
+  hero_bg_url TEXT,
+  logo_url    TEXT,
+  hero_image_url TEXT,
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Insert default row
+INSERT INTO site_settings (id) VALUES ('main') ON CONFLICT DO NOTHING;
+
+-- RLS for site_settings
+ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "site_settings_public_read" ON site_settings FOR SELECT USING (true);
+CREATE POLICY "site_settings_admin_write" ON site_settings FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+
+-- Storage bucket for site assets (logo, hero images)
+INSERT INTO storage.buckets (id, name, public) VALUES ('site-assets', 'site-assets', true) ON CONFLICT DO NOTHING;
+
+CREATE POLICY "site_assets_public_read" ON storage.objects FOR SELECT USING (bucket_id = 'site-assets');
+CREATE POLICY "site_assets_admin_upload" ON storage.objects FOR INSERT WITH CHECK (
+  bucket_id = 'site-assets' AND
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "site_assets_admin_update" ON storage.objects FOR UPDATE USING (
+  bucket_id = 'site-assets' AND
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "site_assets_admin_delete" ON storage.objects FOR DELETE USING (
+  bucket_id = 'site-assets' AND
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
+
+-- ============================================================
 -- DONE! 
 -- Next steps:
 -- 1. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local

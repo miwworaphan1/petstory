@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
     LayoutDashboard, Package, Tag, ShoppingBag, Users,
-    LogOut, Menu, X, Heart, ChevronRight
+    LogOut, Menu, X, Heart, ChevronRight, Palette
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
@@ -16,6 +16,7 @@ const sidebarLinks = [
     { href: '/admin/categories', label: 'หมวดหมู่สินค้า', icon: Tag },
     { href: '/admin/orders', label: 'จัดการคำสั่งซื้อ', icon: ShoppingBag },
     { href: '/admin/users', label: 'ผู้ใช้งาน', icon: Users },
+    { href: '/admin/settings', label: 'ตั้งค่าหน้าแรก', icon: Palette },
 ]
 
 export default function AdminSidebar() {

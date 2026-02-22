@@ -118,7 +118,7 @@ export default async function AdminDashboard() {
                     <h2 className="font-bold text-slate-800 mb-4">การดำเนินการด่วน</h2>
                     <div className="grid grid-cols-2 gap-3">
                         {[
-                            { href: '/admin/products/new', label: 'เพิ่มสินค้าใหม่', icon: '➕', color: 'bg-amber-100 hover:bg-amber-200 border-amber-200' },
+                            { href: '/admin/products', label: 'เพิ่มสินค้าใหม่', icon: '➕', color: 'bg-amber-100 hover:bg-amber-200 border-amber-200' },
                             { href: '/admin/orders?status=pending', label: 'คำสั่งซื้อรอยืนยัน', icon: '⏳', color: 'bg-amber-50 hover:bg-amber-100 border-amber-100' },
                             { href: '/admin/categories', label: 'จัดการหมวดหมู่', icon: '🏷️', color: 'bg-blue-50 hover:bg-blue-100 border-blue-100' },
                             { href: '/admin/users', label: 'รายชื่อผู้ใช้', icon: '👥', color: 'bg-purple-50 hover:bg-purple-100 border-purple-100' },

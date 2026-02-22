@@ -19,12 +19,13 @@ interface ProductFormState {
     price: number | ''
     compare_price: number | ''
     stock: number | ''
+    size: string
     category_id: string
     is_featured: boolean
     is_active: boolean
 }
 
-const defaultForm: ProductFormState = { name: '', slug: '', description: '', price: '', compare_price: '', stock: '', category_id: '', is_featured: false, is_active: true }
+const defaultForm: ProductFormState = { name: '', slug: '', description: '', price: '', compare_price: '', stock: '', size: '', category_id: '', is_featured: false, is_active: true }
 
 export default function AdminProductsPage() {
     const [products, setProducts] = useState<Product[]>([])
@@ -64,7 +65,7 @@ export default function AdminProductsPage() {
 
     const openNew = () => { setForm(defaultForm); setImageFiles([]); setImagePreviews([]); setShowForm(true) }
     const openEdit = (p: Product) => {
-        setForm({ id: p.id, name: p.name, slug: p.slug, description: p.description || '', price: p.price, compare_price: p.compare_price || '', stock: p.stock, category_id: p.category_id || '', is_featured: p.is_featured, is_active: p.is_active })
+        setForm({ id: p.id, name: p.name, slug: p.slug, description: p.description || '', price: p.price, compare_price: p.compare_price || '', stock: p.stock, size: (p as any).size || '', category_id: p.category_id || '', is_featured: p.is_featured, is_active: p.is_active })
         setImageFiles([])
         setImagePreviews(p.product_images?.map(img => img.url) || [])
         setShowForm(true)
@@ -82,6 +83,7 @@ export default function AdminProductsPage() {
                 price: Number(form.price),
                 compare_price: form.compare_price ? Number(form.compare_price) : null,
                 stock: Number(form.stock),
+                size: form.size || null,
                 category_id: form.category_id || null,
                 is_featured: form.is_featured,
                 is_active: form.is_active,
@@ -234,6 +236,10 @@ export default function AdminProductsPage() {
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">สต็อก *</label>
                                     <input type="number" required min={0} value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value ? Number(e.target.value) : '' }))} className="input-field" placeholder="0" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">ขนาด (Size)</label>
+                                    <input type="text" value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))} className="input-field" placeholder="เช่น S, M, L, XL หรือ 1kg, 5kg" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">หมวดหมู่</label>

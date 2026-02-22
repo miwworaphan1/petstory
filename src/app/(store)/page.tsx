@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default async function HomePage() {
     const supabase = await createClient()
 
-    const [{ data: categories }, { data: featuredProducts }, { data: newProducts }] = await Promise.all([
+    const [{ data: categories }, { data: featuredProducts }, { data: newProducts }, { data: siteSettings }] = await Promise.all([
         supabase.from('categories').select('*').order('name').limit(6),
         supabase.from('products')
             .select('*, categories(*), product_images(*)')
@@ -27,12 +27,19 @@ export default async function HomePage() {
             .eq('is_active', true)
             .order('created_at', { ascending: false })
             .limit(4),
+        supabase.from('site_settings').select('*').eq('id', 'main').single(),
     ])
+
+    const heroBg = siteSettings?.hero_bg_url
+    const logoUrl = siteSettings?.logo_url
+    const heroImg = siteSettings?.hero_image_url
 
     return (
         <div>
             {/* Hero */}
-            <section className="relative bg-gradient-to-br from-amber-600 via-amber-500 to-amber-400 overflow-hidden">
+            <section className="relative overflow-hidden" style={heroBg ? { backgroundImage: `url(${heroBg})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
+                {!heroBg && <div className="absolute inset-0 bg-gradient-to-br from-amber-600 via-amber-500 to-amber-400" />}
+                {heroBg && <div className="absolute inset-0 bg-black/30" />}
                 <div className="absolute inset-0 opacity-10">
                     <div className="absolute top-10 right-10 w-64 h-64 bg-white rounded-full blur-3xl" />
                     <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-300 rounded-full blur-3xl" />
@@ -56,29 +63,29 @@ export default async function HomePage() {
                                     <ShoppingBag className="w-5 h-5" />
                                     เลือกซื้อสินค้า
                                 </Link>
-                                <Link href="/about" className="bg-white/20 hover:bg-white/30 text-white font-semibold px-6 py-3 rounded-xl transition-all flex items-center gap-2">
-                                    เกี่ยวกับเรา <ArrowRight className="w-4 h-4" />
-                                </Link>
                             </div>
                         </div>
                         <div className="hidden lg:flex justify-end">
                             <div className="relative">
-                                <div className="w-80 h-80 bg-white/20 rounded-3xl flex items-center justify-center backdrop-blur-sm border border-white/30">
-                                    <div className="text-center">
-                                        <div className="text-8xl mb-4">🐾</div>
-                                        <p className="text-white font-bold text-2xl">Pet Story Club</p>
-                                        <p className="text-white/70 text-sm mt-1">สำหรับน้องขนฟูทุกตัว</p>
+                                {heroImg ? (
+                                    <div className="w-80 h-80 relative">
+                                        <Image src={heroImg} alt="Pet Story Hero" fill className="object-contain" />
                                     </div>
-                                </div>
-                                <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl p-3 shadow-xl">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-2xl">⭐</span>
-                                        <div>
-                                            <p className="font-bold text-slate-800 text-sm">4.9 คะแนน</p>
-                                            <p className="text-xs text-slate-500">จากลูกค้า 1,000+</p>
+                                ) : (
+                                    <div className="w-80 h-80 bg-white/20 rounded-3xl flex items-center justify-center backdrop-blur-sm border border-white/30">
+                                        <div className="text-center">
+                                            {logoUrl ? (
+                                                <div className="w-32 h-32 relative mx-auto mb-4">
+                                                    <Image src={logoUrl} alt="Logo" fill className="object-contain" />
+                                                </div>
+                                            ) : (
+                                                <div className="text-8xl mb-4">🐾</div>
+                                            )}
+                                            <p className="text-white font-bold text-2xl">Pet Story Club</p>
+                                            <p className="text-white/70 text-sm mt-1">สำหรับน้องขนฟูทุกตัว</p>
                                         </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -56,7 +56,6 @@ export default function Navbar() {
     const navLinks = [
         { href: '/', label: 'หน้าแรก' },
         { href: '/shop', label: 'สินค้า' },
-        { href: '/about', label: 'เกี่ยวกับเรา' },
     ]
 
     const isActive = (href: string) => {

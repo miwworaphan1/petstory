@@ -18,7 +18,7 @@ export default function Footer() {
                             ร้านค้าออนไลน์สำหรับน้องหมาน้องแมว และสัตว์เลี้ยงทุกชนิด คัดสรรสินค้าคุณภาพดีในราคาที่คุ้มค่า
                         </p>
                         <div className="flex items-center gap-3">
-                            <a href="#" className="w-9 h-9 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-amber-600 transition-colors">
+                            <a href="https://www.facebook.com/profile.php?id=61578264786161" target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-amber-600 transition-colors">
                                 <Facebook className="w-4 h-4" />
                             </a>
                             <a href="#" className="w-9 h-9 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-amber-600 transition-colors">
@@ -34,7 +34,6 @@ export default function Footer() {
                             {[
                                 { href: '/', label: 'หน้าแรก' },
                                 { href: '/shop', label: 'สินค้าทั้งหมด' },
-                                { href: '/about', label: 'เกี่ยวกับเรา' },
                                 { href: '/orders', label: 'ประวัติการสั่งซื้อ' },
                             ].map(link => (
                                 <li key={link.href}>
