@@ -54,7 +54,6 @@ export default function ProductCard({ product }: ProductCardProps) {
                 .select('*')
                 .eq('user_id', user.id)
                 .eq('product_id', product.id)
-                .is('selected_size', null)
                 .single()
 
             if (existing) {

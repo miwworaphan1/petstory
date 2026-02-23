@@ -45,23 +45,24 @@ export default function AddToCartButton({ product, sizeOptions = [] }: AddToCart
                 .eq('user_id', user.id)
                 .eq('product_id', product.id)
 
-            if (selectedSize) {
+            if (hasSizes && selectedSize) {
                 query = query.eq('selected_size', selectedSize)
-            } else {
-                query = query.is('selected_size', null)
             }
 
-            const { data: existing } = await query.single()
+            const { data: existing } = await query.maybeSingle()
 
             if (existing) {
                 await supabase.from('cart_items').update({ quantity: existing.quantity + qty }).eq('id', existing.id)
             } else {
-                await supabase.from('cart_items').insert({
+                const insertData: any = {
                     user_id: user.id,
                     product_id: product.id,
                     quantity: qty,
-                    selected_size: selectedSize,
-                })
+                }
+                if (hasSizes) {
+                    insertData.selected_size = selectedSize
+                }
+                await supabase.from('cart_items').insert(insertData)
                 incrementCount()
             }
             toast.success('เพิ่มสินค้าลงตะกร้าแล้ว')
@@ -95,8 +96,8 @@ export default function AddToCartButton({ product, sizeOptions = [] }: AddToCart
                                 type="button"
                                 onClick={() => setSelectedSize(selectedSize === size ? null : size)}
                                 className={`px-3 py-1.5 rounded-lg border-2 text-sm font-medium transition-all ${selectedSize === size
-                                        ? 'border-amber-500 bg-amber-50 text-amber-700 shadow-sm'
-                                        : 'border-slate-200 text-slate-600 hover:border-amber-300 hover:bg-amber-50/50'
+                                    ? 'border-amber-500 bg-amber-50 text-amber-700 shadow-sm'
+                                    : 'border-slate-200 text-slate-600 hover:border-amber-300 hover:bg-amber-50/50'
                                     }`}
                             >
                                 {size}
@@ -131,8 +132,8 @@ export default function AddToCartButton({ product, sizeOptions = [] }: AddToCart
                 onClick={handleAdd}
                 disabled={loading || needsSize}
                 className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-all ${needsSize
-                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                        : 'btn-primary'
+                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    : 'btn-primary'
                     }`}
             >
                 <ShoppingCart className="w-5 h-5" />
