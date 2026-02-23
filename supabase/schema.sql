@@ -292,6 +292,13 @@ ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS hero_description TEXT;
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS hero_cta_text TEXT;
 
 -- ============================================================
+-- MIGRATION: Add product tags and sort order
+-- ============================================================
+ALTER TABLE products ADD COLUMN IF NOT EXISTS is_new BOOLEAN DEFAULT false;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS is_sale BOOLEAN DEFAULT false;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;
+
+-- ============================================================
 -- DONE! 
 -- Next steps:
 -- 1. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local

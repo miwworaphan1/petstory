@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Edit2, Trash2, Search, Upload, X, Tag, Image as ImageIcon } from 'lucide-react'
+import { Plus, Edit2, Trash2, Search, Upload, X, Tag, Image as ImageIcon, ChevronUp, ChevronDown, Sparkles, Flame } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
 import type { Product, Category } from '@/types/database'
@@ -22,10 +22,12 @@ interface ProductFormState {
     size: string
     category_id: string
     is_featured: boolean
+    is_new: boolean
+    is_sale: boolean
     is_active: boolean
 }
 
-const defaultForm: ProductFormState = { name: '', slug: '', description: '', price: '', compare_price: '', stock: '', size: '', category_id: '', is_featured: false, is_active: true }
+const defaultForm: ProductFormState = { name: '', slug: '', description: '', price: '', compare_price: '', stock: '', size: '', category_id: '', is_featured: false, is_new: false, is_sale: false, is_active: true }
 
 export default function AdminProductsPage() {
     const [products, setProducts] = useState<Product[]>([])
@@ -43,7 +45,7 @@ export default function AdminProductsPage() {
     const loadData = async () => {
         setLoading(true)
         const [{ data: p }, { data: c }] = await Promise.all([
-            supabase.from('products').select('*, categories(*), product_images(*)').order('created_at', { ascending: false }).limit(50),
+            supabase.from('products').select('*, categories(*), product_images(*)').order('sort_order', { ascending: true }).order('created_at', { ascending: false }).limit(100),
             supabase.from('categories').select('*').order('name'),
         ])
         setProducts((p as any) || [])
@@ -65,7 +67,7 @@ export default function AdminProductsPage() {
 
     const openNew = () => { setForm(defaultForm); setImageFiles([]); setImagePreviews([]); setShowForm(true) }
     const openEdit = (p: Product) => {
-        setForm({ id: p.id, name: p.name, slug: p.slug, description: p.description || '', price: p.price, compare_price: p.compare_price || '', stock: p.stock, size: (p as any).size || '', category_id: p.category_id || '', is_featured: p.is_featured, is_active: p.is_active })
+        setForm({ id: p.id, name: p.name, slug: p.slug, description: p.description || '', price: p.price, compare_price: p.compare_price || '', stock: p.stock, size: (p as any).size || '', category_id: p.category_id || '', is_featured: p.is_featured, is_new: (p as any).is_new || false, is_sale: (p as any).is_sale || false, is_active: p.is_active })
         setImageFiles([])
         setImagePreviews(p.product_images?.map(img => img.url) || [])
         setShowForm(true)
@@ -86,6 +88,8 @@ export default function AdminProductsPage() {
                 size: form.size || null,
                 category_id: form.category_id || null,
                 is_featured: form.is_featured,
+                is_new: form.is_new,
+                is_sale: form.is_sale,
                 is_active: form.is_active,
             }
 
@@ -131,6 +135,22 @@ export default function AdminProductsPage() {
         loadData()
     }
 
+    const handleSort = async (id: string, direction: 'up' | 'down') => {
+        const idx = products.findIndex(p => p.id === id)
+        if (idx < 0) return
+        const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+        if (swapIdx < 0 || swapIdx >= products.length) return
+        const current = products[idx]
+        const swap = products[swapIdx]
+        const currentOrder = (current as any).sort_order ?? idx
+        const swapOrder = (swap as any).sort_order ?? swapIdx
+        await Promise.all([
+            supabase.from('products').update({ sort_order: swapOrder }).eq('id', current.id),
+            supabase.from('products').update({ sort_order: currentOrder }).eq('id', swap.id),
+        ])
+        loadData()
+    }
+
     return (
         <div className="p-6 lg:p-8">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -155,11 +175,13 @@ export default function AdminProductsPage() {
                     <table className="w-full">
                         <thead className="bg-slate-50 border-b border-slate-100">
                             <tr>
+                                <th className="table-header">ลำดับ</th>
                                 <th className="table-header">สินค้า</th>
                                 <th className="table-header">หมวดหมู่</th>
                                 <th className="table-header">ราคา</th>
                                 <th className="table-header">ขนาด</th>
                                 <th className="table-header">สต็อก</th>
+                                <th className="table-header">แท็ก</th>
                                 <th className="table-header">สถานะ</th>
                                 <th className="table-header">การดำเนินการ</th>
                             </tr>
@@ -167,24 +189,27 @@ export default function AdminProductsPage() {
                         <tbody className="divide-y divide-slate-50">
                             {loading ? (
                                 [...Array(5)].map((_, i) => (
-                                    <tr key={i}><td colSpan={7} className="p-4"><div className="h-4 bg-slate-200 rounded animate-pulse" /></td></tr>
+                                    <tr key={i}><td colSpan={9} className="p-4"><div className="h-4 bg-slate-200 rounded animate-pulse" /></td></tr>
                                 ))
                             ) : filteredProducts.length === 0 ? (
-                                <tr><td colSpan={7} className="text-center py-12 text-slate-400">ไม่พบสินค้า</td></tr>
+                                <tr><td colSpan={9} className="text-center py-12 text-slate-400">ไม่พบสินค้า</td></tr>
                             ) : (
                                 filteredProducts.map(p => {
                                     const img = p.product_images?.find(i => i.is_primary)?.url || p.product_images?.[0]?.url
                                     return (
                                         <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
                                             <td className="table-cell">
+                                                <div className="flex items-center gap-1">
+                                                    <button onClick={() => handleSort(p.id, 'up')} className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600"><ChevronUp className="w-4 h-4" /></button>
+                                                    <button onClick={() => handleSort(p.id, 'down')} className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600"><ChevronDown className="w-4 h-4" /></button>
+                                                </div>
+                                            </td>
+                                            <td className="table-cell">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-100 shrink-0 relative">
                                                         {img ? <Image src={img} alt={p.name} fill className="object-cover" /> : <div className="w-full h-full flex items-center justify-center text-lg">🐾</div>}
                                                     </div>
-                                                    <div>
-                                                        <p className="font-medium text-slate-800 text-sm line-clamp-1">{p.name}</p>
-                                                        {p.is_featured && <span className="text-xs text-amber-600 font-medium">⭐ แนะนำ</span>}
-                                                    </div>
+                                                    <p className="font-medium text-slate-800 text-sm line-clamp-1">{p.name}</p>
                                                 </div>
                                             </td>
                                             <td className="table-cell"><span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">{(p.categories as any)?.name || '—'}</span></td>
@@ -192,6 +217,13 @@ export default function AdminProductsPage() {
                                             <td className="table-cell">{(p as any).size ? <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">{(p as any).size}</span> : <span className="text-slate-300">—</span>}</td>
                                             <td className="table-cell">
                                                 <span className={`text-sm font-medium ${p.stock === 0 ? 'text-red-500' : p.stock < 10 ? 'text-amber-500' : 'text-green-600'}`}>{p.stock}</span>
+                                            </td>
+                                            <td className="table-cell">
+                                                <div className="flex flex-wrap gap-1">
+                                                    {p.is_featured && <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">⭐แนะนำ</span>}
+                                                    {(p as any).is_new && <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">🆕ใหม่</span>}
+                                                    {(p as any).is_sale && <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">🔥ลดราคา</span>}
+                                                </div>
                                             </td>
                                             <td className="table-cell">
                                                 <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${p.is_active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
@@ -260,7 +292,15 @@ export default function AdminProductsPage() {
                             <div className="flex flex-wrap gap-4">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" checked={form.is_featured} onChange={e => setForm(f => ({ ...f, is_featured: e.target.checked }))} className="w-4 h-4 accent-amber-600" />
-                                    <span className="text-sm font-medium text-slate-700">สินค้าแนะนำ</span>
+                                    <span className="text-sm font-medium text-slate-700">⭐ สินค้าแนะนำ</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" checked={form.is_new} onChange={e => setForm(f => ({ ...f, is_new: e.target.checked }))} className="w-4 h-4 accent-green-600" />
+                                    <span className="text-sm font-medium text-slate-700">🆕 สินค้ามาใหม่</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" checked={form.is_sale} onChange={e => setForm(f => ({ ...f, is_sale: e.target.checked }))} className="w-4 h-4 accent-red-600" />
+                                    <span className="text-sm font-medium text-slate-700">🔥 สินค้าลดราคา</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} className="w-4 h-4 accent-amber-600" />

@@ -14,19 +14,29 @@ export const metadata: Metadata = {
 export default async function HomePage() {
     const supabase = await createClient()
 
-    const [{ data: categories }, { data: featuredProducts }, { data: newProducts }, { data: siteSettings }] = await Promise.all([
+    const [{ data: categories }, { data: featuredProducts }, { data: newProducts }, { data: saleProducts }, { data: siteSettings }] = await Promise.all([
         supabase.from('categories').select('*').order('name').limit(6),
         supabase.from('products')
             .select('*, categories(*), product_images(*)')
             .eq('is_featured', true)
             .eq('is_active', true)
+            .order('sort_order', { ascending: true })
             .order('created_at', { ascending: false })
             .limit(8),
         supabase.from('products')
             .select('*, categories(*), product_images(*)')
+            .eq('is_new', true)
             .eq('is_active', true)
+            .order('sort_order', { ascending: true })
             .order('created_at', { ascending: false })
-            .limit(4),
+            .limit(8),
+        supabase.from('products')
+            .select('*, categories(*), product_images(*)')
+            .eq('is_sale', true)
+            .eq('is_active', true)
+            .order('sort_order', { ascending: true })
+            .order('created_at', { ascending: false })
+            .limit(8),
         supabase.from('site_settings').select('*').eq('id', 'main').single(),
     ])
 
@@ -167,6 +177,28 @@ export default async function HomePage() {
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 lg:gap-6">
                             {newProducts.map(p => (
+                                <ProductCard key={p.id} product={p as any} />
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
+
+            {/* Sale Products */}
+            {saleProducts && saleProducts.length > 0 && (
+                <section className="py-8 sm:py-12 lg:py-16 bg-white">
+                    <div className="container-custom">
+                        <div className="flex items-center justify-between mb-8">
+                            <div>
+                                <h2 className="section-title">🔥 สินค้าราคาพิเศษ</h2>
+                                <p className="text-slate-500">โปรโมชั่นสุดคุ้มที่คุณไม่ควรพลาด</p>
+                            </div>
+                            <Link href="/shop" className="flex items-center gap-1 text-amber-600 hover:text-amber-700 font-semibold text-sm">
+                                ดูทั้งหมด <ArrowRight className="w-4 h-4" />
+                            </Link>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+                            {saleProducts.map(p => (
                                 <ProductCard key={p.id} product={p as any} />
                             ))}
                         </div>

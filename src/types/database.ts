@@ -30,7 +30,10 @@ export interface Product {
     size: string | null
     category_id: string | null
     is_featured: boolean
+    is_new: boolean
+    is_sale: boolean
     is_active: boolean
+    sort_order: number
     created_at: string
     updated_at: string
     categories?: Category
