@@ -38,6 +38,11 @@ export default async function ProductDetailPage({ params }: Props) {
         ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100)
         : 0
 
+    // Parse size options from comma-separated string
+    const sizeOptions: string[] = product.size
+        ? product.size.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : []
+
     return (
         <div className="min-h-screen bg-slate-50 py-8">
             <div className="container-custom">
@@ -131,21 +136,8 @@ export default async function ProductDetailPage({ params }: Props) {
                             )}
                         </div>
 
-                        {/* Stock */}
-                        <div className="flex items-center gap-2 mb-6">
-                            <Package className="w-4 h-4 text-slate-400" />
-                            {product.stock > 0 ? (
-                                <>
-                                    <span className="text-sm text-green-600 font-medium">มีสินค้า</span>
-                                    <span className="text-sm text-slate-500">({product.stock} ชิ้น)</span>
-                                </>
-                            ) : (
-                                <span className="text-sm text-red-500 font-medium">หมดสต็อก</span>
-                            )}
-                        </div>
-
-                        {/* Add to Cart */}
-                        <AddToCartButton product={product as any} />
+                        {/* Size + Add to Cart */}
+                        <AddToCartButton product={product as any} sizeOptions={sizeOptions} />
 
                         {/* Description */}
                         {product.description && (

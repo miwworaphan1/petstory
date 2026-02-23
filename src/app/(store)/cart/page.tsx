@@ -88,6 +88,7 @@ export default function CartPage() {
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-xs text-amber-600 font-medium">{product?.categories?.name}</p>
                                                 <h3 className="font-semibold text-slate-800 text-sm leading-tight mb-1 truncate">{product?.name}</h3>
+                                                {(item as any).selected_size && <p className="text-xs text-blue-600 font-medium">ขนาด: {(item as any).selected_size}</p>}
                                                 <p className="text-amber-600 font-bold">฿{product?.price?.toLocaleString('th-TH')}</p>
                                             </div>
                                             <div className="flex flex-col items-end gap-2">

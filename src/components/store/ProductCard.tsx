@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ShoppingCart, Heart, Star } from 'lucide-react'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useCartStore } from '@/store/cartStore'
 import toast from 'react-hot-toast'
@@ -22,6 +23,9 @@ export default function ProductCard({ product }: ProductCardProps) {
     const [wishlisted, setWishlisted] = useState(false)
     const { incrementCount } = useCartStore()
     const supabase = createClient()
+    const router = useRouter()
+
+    const hasSizes = !!product.size
 
     const primaryImage = product.product_images?.find(img => img.is_primary)?.url
         || product.product_images?.[0]?.url
@@ -32,6 +36,11 @@ export default function ProductCard({ product }: ProductCardProps) {
 
     const handleAddToCart = async (e: React.MouseEvent) => {
         e.preventDefault()
+        // If product has sizes, redirect to detail page for size selection
+        if (hasSizes) {
+            router.push(`/shop/${product.slug}`)
+            return
+        }
         setAdding(true)
         try {
             const { data: { user } } = await supabase.auth.getUser()
@@ -45,6 +54,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 .select('*')
                 .eq('user_id', user.id)
                 .eq('product_id', product.id)
+                .is('selected_size', null)
                 .single()
 
             if (existing) {
@@ -118,9 +128,12 @@ export default function ProductCard({ product }: ProductCardProps) {
                     {product.categories && (
                         <p className="text-xs text-amber-600 font-medium mb-1">{product.categories.name}</p>
                     )}
-                    <h3 className="font-semibold text-slate-800 text-sm leading-tight mb-2 line-clamp-2 group-hover:text-amber-700 transition-colors">
+                    <h3 className="font-semibold text-slate-800 text-sm leading-tight mb-1 line-clamp-2 group-hover:text-amber-700 transition-colors">
                         {product.name}
                     </h3>
+                    {product.size && (
+                        <p className="text-xs text-blue-600 font-medium mb-1">ขนาด: {product.size}</p>
+                    )}
 
                     {/* Stars (placeholder) */}
                     <div className="flex items-center gap-1 mb-3">

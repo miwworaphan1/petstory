@@ -95,8 +95,9 @@ CREATE TABLE IF NOT EXISTS cart_items (
   user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   product_id  UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   quantity    INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
+  selected_size TEXT,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (user_id, product_id)
+  UNIQUE (user_id, product_id, selected_size)
 );
 
 -- ============================================================
@@ -228,12 +229,16 @@ ALTER TABLE products ADD COLUMN IF NOT EXISTS size TEXT;
 -- 11. SITE SETTINGS TABLE (for admin hero/logo customization)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS site_settings (
-  id          TEXT PRIMARY KEY DEFAULT 'main',
-  hero_bg_url TEXT,
-  logo_url    TEXT,
-  hero_image_url TEXT,
-  updated_at  TIMESTAMPTZ DEFAULT NOW()
+  id              TEXT PRIMARY KEY DEFAULT 'main',
+  hero_bg_url     TEXT,
+  hero_bg_opacity NUMERIC(3,2) NOT NULL DEFAULT 0.30,
+  logo_url        TEXT,
+  hero_image_url  TEXT,
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migration: Add hero_bg_opacity column if table already exists
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS hero_bg_opacity NUMERIC(3,2) NOT NULL DEFAULT 0.30;
 
 -- Insert default row
 INSERT INTO site_settings (id) VALUES ('main') ON CONFLICT DO NOTHING;
@@ -261,6 +266,13 @@ CREATE POLICY "site_assets_admin_delete" ON storage.objects FOR DELETE USING (
   bucket_id = 'site-assets' AND
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
 );
+
+-- ============================================================
+-- MIGRATION: Add selected_size to cart_items
+-- ============================================================
+ALTER TABLE cart_items ADD COLUMN IF NOT EXISTS selected_size TEXT;
+ALTER TABLE cart_items DROP CONSTRAINT IF EXISTS cart_items_user_id_product_id_key;
+ALTER TABLE cart_items ADD CONSTRAINT cart_items_user_id_product_id_selected_size_key UNIQUE (user_id, product_id, selected_size);
 
 -- ============================================================
 -- DONE! 

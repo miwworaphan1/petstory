@@ -96,7 +96,7 @@ export default function CheckoutPage() {
                     product_id: item.product_id,
                     quantity: item.quantity,
                     unit_price: product?.price || 0,
-                    product_snapshot: { name: product?.name, price: product?.price, image_url: img },
+                    product_snapshot: { name: product?.name, price: product?.price, size: (item as any).selected_size || product?.size || null, image_url: img },
                 }
             })
 
@@ -216,6 +216,7 @@ export default function CheckoutPage() {
                                                 <div className="w-10 h-10 bg-slate-100 rounded-lg shrink-0 flex items-center justify-center text-lg">🐾</div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-xs font-medium text-slate-700 truncate">{product?.name}</p>
+                                                    {(item as any).selected_size && <p className="text-xs text-blue-600">ขนาด: {(item as any).selected_size}</p>}
                                                     <p className="text-xs text-slate-500">x{item.quantity}</p>
                                                 </div>
                                                 <p className="text-sm font-semibold text-slate-800 shrink-0">฿{((product?.price || 0) * item.quantity).toLocaleString('th-TH')}</p>

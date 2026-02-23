@@ -8,14 +8,27 @@ import { useCartStore } from '@/store/cartStore'
 import toast from 'react-hot-toast'
 import type { Product } from '@/types/database'
 
-export default function AddToCartButton({ product }: { product: Product }) {
+interface AddToCartButtonProps {
+    product: Product
+    sizeOptions?: string[]
+}
+
+export default function AddToCartButton({ product, sizeOptions = [] }: AddToCartButtonProps) {
     const [qty, setQty] = useState(1)
     const [loading, setLoading] = useState(false)
+    const [selectedSize, setSelectedSize] = useState<string | null>(null)
     const { incrementCount } = useCartStore()
     const supabase = createClient()
     const router = useRouter()
 
+    const hasSizes = sizeOptions.length > 0
+    const needsSize = hasSizes && !selectedSize
+
     const handleAdd = async () => {
+        if (needsSize) {
+            toast.error('กรุณาเลือกขนาดก่อน')
+            return
+        }
         setLoading(true)
         try {
             const { data: { user } } = await supabase.auth.getUser()
@@ -24,17 +37,31 @@ export default function AddToCartButton({ product }: { product: Product }) {
                 router.push('/login')
                 return
             }
-            const { data: existing } = await supabase
+
+            // Query for existing cart item with same product AND size
+            let query = supabase
                 .from('cart_items')
                 .select('*')
                 .eq('user_id', user.id)
                 .eq('product_id', product.id)
-                .single()
+
+            if (selectedSize) {
+                query = query.eq('selected_size', selectedSize)
+            } else {
+                query = query.is('selected_size', null)
+            }
+
+            const { data: existing } = await query.single()
 
             if (existing) {
                 await supabase.from('cart_items').update({ quantity: existing.quantity + qty }).eq('id', existing.id)
             } else {
-                await supabase.from('cart_items').insert({ user_id: user.id, product_id: product.id, quantity: qty })
+                await supabase.from('cart_items').insert({
+                    user_id: user.id,
+                    product_id: product.id,
+                    quantity: qty,
+                    selected_size: selectedSize,
+                })
                 incrementCount()
             }
             toast.success('เพิ่มสินค้าลงตะกร้าแล้ว')
@@ -54,7 +81,32 @@ export default function AddToCartButton({ product }: { product: Product }) {
     }
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-4">
+            {/* Size Selection */}
+            {hasSizes && (
+                <div>
+                    <p className="text-sm font-medium text-slate-700 mb-2">
+                        ขนาด: {selectedSize ? <span className="text-amber-600 font-bold">{selectedSize}</span> : <span className="text-red-500">กรุณาเลือก</span>}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {sizeOptions.map(size => (
+                            <button
+                                key={size}
+                                type="button"
+                                onClick={() => setSelectedSize(selectedSize === size ? null : size)}
+                                className={`px-3 py-1.5 rounded-lg border-2 text-sm font-medium transition-all ${selectedSize === size
+                                        ? 'border-amber-500 bg-amber-50 text-amber-700 shadow-sm'
+                                        : 'border-slate-200 text-slate-600 hover:border-amber-300 hover:bg-amber-50/50'
+                                    }`}
+                            >
+                                {size}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Quantity */}
             <div className="flex items-center gap-3">
                 <span className="text-sm font-medium text-slate-700">จำนวน:</span>
                 <div className="flex items-center gap-2 bg-slate-100 rounded-xl p-1">
@@ -73,13 +125,18 @@ export default function AddToCartButton({ product }: { product: Product }) {
                     </button>
                 </div>
             </div>
+
+            {/* Add to Cart Button */}
             <button
                 onClick={handleAdd}
-                disabled={loading}
-                className="btn-primary w-full flex items-center justify-center gap-2"
+                disabled={loading || needsSize}
+                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-all ${needsSize
+                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        : 'btn-primary'
+                    }`}
             >
                 <ShoppingCart className="w-5 h-5" />
-                {loading ? 'กำลังเพิ่ม...' : 'เพิ่มลงตะกร้า'}
+                {loading ? 'กำลังเพิ่ม...' : needsSize ? 'กรุณาเลือกขนาด' : 'เพิ่มลงตะกร้า'}
             </button>
         </div>
     )

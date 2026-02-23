@@ -190,7 +190,10 @@ function AdminOrdersPageInner() {
                                 <div className="space-y-2">
                                     {(selectedOrder.order_items as any[])?.map((item: any) => (
                                         <div key={item.id} className="flex justify-between text-sm p-2 bg-slate-50 rounded-lg">
-                                            <span className="text-slate-700">{item.product_snapshot?.name || item.products?.name} × {item.quantity}</span>
+                                            <div>
+                                                <span className="text-slate-700">{item.product_snapshot?.name || item.products?.name} × {item.quantity}</span>
+                                                {item.product_snapshot?.size && <p className="text-xs text-blue-600">ขนาด: {item.product_snapshot.size}</p>}
+                                            </div>
                                             <span className="font-semibold text-slate-800">฿{(item.unit_price * item.quantity).toLocaleString('th-TH')}</span>
                                         </div>
                                     ))}
@@ -224,8 +227,9 @@ function AdminOrdersPageInner() {
                         </div>
                     </div>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     )
 }
 

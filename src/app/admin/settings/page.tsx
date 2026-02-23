@@ -2,18 +2,19 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Upload, X, Image as ImageIcon, Save, Palette } from 'lucide-react'
+import { Upload, X, Image as ImageIcon, Save, Palette, Info } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
 
 interface SiteSettings {
     hero_bg_url: string | null
+    hero_bg_opacity: number
     logo_url: string | null
     hero_image_url: string | null
 }
 
 export default function AdminSettingsPage() {
-    const [settings, setSettings] = useState<SiteSettings>({ hero_bg_url: null, logo_url: null, hero_image_url: null })
+    const [settings, setSettings] = useState<SiteSettings>({ hero_bg_url: null, hero_bg_opacity: 0.3, logo_url: null, hero_image_url: null })
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const supabase = createClient()
@@ -30,6 +31,9 @@ export default function AdminSettingsPage() {
     const [logoFile, setLogoFile] = useState<File | null>(null)
     const [heroImgFile, setHeroImgFile] = useState<File | null>(null)
 
+    const [opacity, setOpacity] = useState(0.3)
+    const [initialOpacity, setInitialOpacity] = useState(0.3)
+
     useEffect(() => {
         loadSettings()
     }, [])
@@ -42,6 +46,9 @@ export default function AdminSettingsPage() {
             setHeroBgPreview(data.hero_bg_url)
             setLogoPreview(data.logo_url)
             setHeroImgPreview(data.hero_image_url)
+            const op = data.hero_bg_opacity ?? 0.3
+            setOpacity(op)
+            setInitialOpacity(op)
         }
         setLoading(false)
     }
@@ -77,11 +84,14 @@ export default function AdminSettingsPage() {
         return urlData.publicUrl
     }
 
+    const hasChanges = heroBgFile || logoFile || heroImgFile || opacity !== initialOpacity
+
     const handleSave = async () => {
         setSaving(true)
         try {
-            const updates: Partial<SiteSettings> & { updated_at: string } = {
-                updated_at: new Date().toISOString()
+            const updates: Record<string, unknown> = {
+                updated_at: new Date().toISOString(),
+                hero_bg_opacity: opacity,
             }
 
             if (heroBgFile) {
@@ -163,7 +173,7 @@ export default function AdminSettingsPage() {
                 </div>
                 <button
                     onClick={handleSave}
-                    disabled={saving || (!heroBgFile && !logoFile && !heroImgFile)}
+                    disabled={saving || !hasChanges}
                     className="btn-primary flex items-center gap-2 disabled:opacity-50"
                 >
                     <Save className="w-4 h-4" />
@@ -183,9 +193,10 @@ export default function AdminSettingsPage() {
                         {heroBgPreview ? (
                             <>
                                 <Image src={heroBgPreview} alt="Hero BG" fill className="object-cover" />
+                                <div className="absolute inset-0 bg-black" style={{ opacity }} />
                                 <button
                                     onClick={(e) => { e.stopPropagation(); clearImage('hero_bg_url') }}
-                                    className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
@@ -198,12 +209,40 @@ export default function AdminSettingsPage() {
                         )}
                     </div>
                     <input ref={heroBgRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e.target.files?.[0], setHeroBgFile, setHeroBgPreview)} />
+
+                    {/* Opacity Slider */}
+                    <div className="mt-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm font-medium text-slate-700">ความทึบ (Overlay)</label>
+                            <span className="text-sm font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg">
+                                {Math.round(opacity * 100)}%
+                            </span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={Math.round(opacity * 100)}
+                            onChange={(e) => setOpacity(Number(e.target.value) / 100)}
+                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                        />
+                        <div className="flex justify-between text-xs text-slate-400 mt-1">
+                            <span>สว่าง (0%)</span>
+                            <span>มืด (100%)</span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Logo */}
                 <div className="card p-5">
                     <h3 className="font-bold text-slate-800 mb-1">โลโก้</h3>
-                    <p className="text-xs text-slate-400 mb-4">แนะนำ 200×200px, PNG</p>
+                    <p className="text-xs text-slate-400 mb-3">แนะนำ 200×200px, PNG</p>
+                    <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+                        <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <p className="text-xs text-amber-700">
+                            โลโก้นี้จะถูกใช้เป็น <strong>Logo บน Navbar</strong> และ <strong>Favicon</strong> ของเว็บไซต์โดยอัตโนมัติ
+                        </p>
+                    </div>
                     <div
                         className="aspect-square relative rounded-xl overflow-hidden border-2 border-dashed border-slate-200 bg-slate-50 cursor-pointer hover:border-amber-400 transition-colors group max-w-[200px] mx-auto"
                         onClick={() => logoRef.current?.click()}
@@ -268,7 +307,7 @@ export default function AdminSettingsPage() {
                             : 'linear-gradient(to bottom right, #D97706, #F59E0B, #FBBF24)'
                     }}
                 >
-                    <div className="absolute inset-0 bg-black/20" />
+                    <div className="absolute inset-0 bg-black" style={{ opacity: heroBgPreview ? opacity : 0 }} />
                     <div className="relative flex items-center justify-between h-full px-8">
                         <div className="text-white">
                             <h2 className="text-2xl font-bold">ทุกความสุข</h2>

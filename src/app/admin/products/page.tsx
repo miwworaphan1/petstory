@@ -158,6 +158,7 @@ export default function AdminProductsPage() {
                                 <th className="table-header">สินค้า</th>
                                 <th className="table-header">หมวดหมู่</th>
                                 <th className="table-header">ราคา</th>
+                                <th className="table-header">ขนาด</th>
                                 <th className="table-header">สต็อก</th>
                                 <th className="table-header">สถานะ</th>
                                 <th className="table-header">การดำเนินการ</th>
@@ -166,10 +167,10 @@ export default function AdminProductsPage() {
                         <tbody className="divide-y divide-slate-50">
                             {loading ? (
                                 [...Array(5)].map((_, i) => (
-                                    <tr key={i}><td colSpan={6} className="p-4"><div className="h-4 bg-slate-200 rounded animate-pulse" /></td></tr>
+                                    <tr key={i}><td colSpan={7} className="p-4"><div className="h-4 bg-slate-200 rounded animate-pulse" /></td></tr>
                                 ))
                             ) : filteredProducts.length === 0 ? (
-                                <tr><td colSpan={6} className="text-center py-12 text-slate-400">ไม่พบสินค้า</td></tr>
+                                <tr><td colSpan={7} className="text-center py-12 text-slate-400">ไม่พบสินค้า</td></tr>
                             ) : (
                                 filteredProducts.map(p => {
                                     const img = p.product_images?.find(i => i.is_primary)?.url || p.product_images?.[0]?.url
@@ -188,6 +189,7 @@ export default function AdminProductsPage() {
                                             </td>
                                             <td className="table-cell"><span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">{(p.categories as any)?.name || '—'}</span></td>
                                             <td className="table-cell font-semibold text-slate-800">฿{p.price.toLocaleString('th-TH')}</td>
+                                            <td className="table-cell">{(p as any).size ? <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">{(p as any).size}</span> : <span className="text-slate-300">—</span>}</td>
                                             <td className="table-cell">
                                                 <span className={`text-sm font-medium ${p.stock === 0 ? 'text-red-500' : p.stock < 10 ? 'text-amber-500' : 'text-green-600'}`}>{p.stock}</span>
                                             </td>

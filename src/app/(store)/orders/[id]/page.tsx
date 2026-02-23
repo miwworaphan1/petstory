@@ -152,6 +152,7 @@ export default function OrderDetailPage() {
                                 <div className="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center text-2xl shrink-0">🐾</div>
                                 <div className="flex-1">
                                     <p className="font-medium text-slate-800 text-sm">{item.product_snapshot?.name || item.products?.name}</p>
+                                    {item.product_snapshot?.size && <p className="text-xs text-blue-600 font-medium">ขนาด: {item.product_snapshot.size}</p>}
                                     <p className="text-xs text-slate-500">x{item.quantity} × ฿{item.unit_price.toLocaleString('th-TH')}</p>
                                 </div>
                                 <p className="font-bold text-slate-800">฿{(item.quantity * item.unit_price).toLocaleString('th-TH')}</p>

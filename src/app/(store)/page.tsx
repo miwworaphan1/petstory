@@ -31,6 +31,7 @@ export default async function HomePage() {
     ])
 
     const heroBg = siteSettings?.hero_bg_url
+    const heroBgOpacity = siteSettings?.hero_bg_opacity ?? 0.3
     const logoUrl = siteSettings?.logo_url
     const heroImg = siteSettings?.hero_image_url
 
@@ -39,7 +40,7 @@ export default async function HomePage() {
             {/* Hero */}
             <section className="relative overflow-hidden" style={heroBg ? { backgroundImage: `url(${heroBg})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
                 {!heroBg && <div className="absolute inset-0 bg-gradient-to-br from-amber-600 via-amber-500 to-amber-400" />}
-                {heroBg && <div className="absolute inset-0 bg-black/30" />}
+                {heroBg && <div className="absolute inset-0 bg-black" style={{ opacity: heroBgOpacity }} />}
                 <div className="absolute inset-0 opacity-10">
                     <div className="absolute top-10 right-10 w-64 h-64 bg-white rounded-full blur-3xl" />
                     <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-300 rounded-full blur-3xl" />

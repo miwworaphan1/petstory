@@ -27,6 +27,7 @@ export interface Product {
     price: number
     compare_price: number | null
     stock: number
+    size: string | null
     category_id: string | null
     is_featured: boolean
     is_active: boolean
@@ -49,6 +50,7 @@ export interface CartItem {
     user_id: string
     product_id: string
     quantity: number
+    selected_size: string | null
     created_at: string
     products?: Product
 }
@@ -102,5 +104,6 @@ export interface ShippingAddress {
 export interface ProductSnapshot {
     name: string
     price: number
+    size: string | null
     image_url: string | null
 }

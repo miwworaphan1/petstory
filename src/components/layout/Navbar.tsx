@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { ShoppingCart, Menu, X, User, LogOut, LayoutDashboard, Package, Heart } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -13,6 +14,7 @@ export default function Navbar() {
     const [profile, setProfile] = useState<Profile | null>(null)
     const [loading, setLoading] = useState(true)
     const [userMenuOpen, setUserMenuOpen] = useState(false)
+    const [logoUrl, setLogoUrl] = useState<string | null>(null)
     const pathname = usePathname()
     const router = useRouter()
     const supabase = createClient()
@@ -37,6 +39,13 @@ export default function Navbar() {
             setLoading(false)
         }
         getSession()
+
+        // Fetch logo from site_settings
+        const fetchLogo = async () => {
+            const { data } = await supabase.from('site_settings').select('logo_url').eq('id', 'main').single()
+            if (data?.logo_url) setLogoUrl(data.logo_url)
+        }
+        fetchLogo()
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
             getSession()
@@ -69,9 +78,15 @@ export default function Navbar() {
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2 group">
-                        <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center shadow-md group-hover:shadow-amber-300 transition-all">
-                            <Heart className="w-5 h-5 text-white fill-white" />
-                        </div>
+                        {logoUrl ? (
+                            <div className="w-9 h-9 relative shrink-0">
+                                <Image src={logoUrl} alt="Logo" fill className="object-contain" />
+                            </div>
+                        ) : (
+                            <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center shadow-md group-hover:shadow-amber-300 transition-all">
+                                <Heart className="w-5 h-5 text-white fill-white" />
+                            </div>
+                        )}
                         <div>
                             <span className="font-bold text-lg text-slate-800">Pet Story</span>
                             <span className="text-amber-600 font-bold text-lg"> Club</span>
