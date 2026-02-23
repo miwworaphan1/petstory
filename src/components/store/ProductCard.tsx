@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingCart, Heart, Star } from 'lucide-react'
+import { ShoppingCart, Heart } from 'lucide-react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -57,14 +57,16 @@ export default function ProductCard({ product }: ProductCardProps) {
                 .single()
 
             if (existing) {
-                await supabase
+                const { error: updateError } = await supabase
                     .from('cart_items')
                     .update({ quantity: existing.quantity + 1 })
                     .eq('id', existing.id)
+                if (updateError) { toast.error('ไม่สามารถอัปเดตตะกร้าได้: ' + updateError.message); return }
             } else {
-                await supabase
+                const { error: insertError } = await supabase
                     .from('cart_items')
                     .insert({ user_id: user.id, product_id: product.id, quantity: 1 })
+                if (insertError) { toast.error('ไม่สามารถเพิ่มสินค้าได้: ' + insertError.message); return }
                 incrementCount()
             }
             toast.success(`เพิ่ม "${product.name}" ลงตะกร้าแล้ว`)
@@ -134,13 +136,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                         <p className="text-xs text-blue-600 font-medium mb-1">ขนาด: {product.size}</p>
                     )}
 
-                    {/* Stars (placeholder) */}
-                    <div className="flex items-center gap-1 mb-3">
-                        {[...Array(5)].map((_, i) => (
-                            <Star key={i} className={`w-3 h-3 ${i < 4 ? 'fill-amber-400 text-amber-400' : 'text-slate-200 fill-slate-200'}`} />
-                        ))}
-                        <span className="text-xs text-slate-400 ml-1">(4.0)</span>
-                    </div>
+
 
                     {/* Price */}
                     <div className="flex items-end justify-between">

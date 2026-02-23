@@ -52,7 +52,8 @@ export default function AddToCartButton({ product, sizeOptions = [] }: AddToCart
             const { data: existing } = await query.maybeSingle()
 
             if (existing) {
-                await supabase.from('cart_items').update({ quantity: existing.quantity + qty }).eq('id', existing.id)
+                const { error: updateError } = await supabase.from('cart_items').update({ quantity: existing.quantity + qty }).eq('id', existing.id)
+                if (updateError) { toast.error('ไม่สามารถอัปเดตตะกร้าได้: ' + updateError.message); return }
             } else {
                 const insertData: any = {
                     user_id: user.id,
@@ -62,7 +63,8 @@ export default function AddToCartButton({ product, sizeOptions = [] }: AddToCart
                 if (hasSizes) {
                     insertData.selected_size = selectedSize
                 }
-                await supabase.from('cart_items').insert(insertData)
+                const { error: insertError } = await supabase.from('cart_items').insert(insertData)
+                if (insertError) { toast.error('ไม่สามารถเพิ่มสินค้าได้: ' + insertError.message); return }
                 incrementCount()
             }
             toast.success('เพิ่มสินค้าลงตะกร้าแล้ว')

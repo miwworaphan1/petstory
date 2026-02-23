@@ -275,8 +275,26 @@ ALTER TABLE cart_items DROP CONSTRAINT IF EXISTS cart_items_user_id_product_id_k
 ALTER TABLE cart_items ADD CONSTRAINT cart_items_user_id_product_id_selected_size_key UNIQUE (user_id, product_id, selected_size);
 
 -- ============================================================
+-- MIGRATION: Add payment settings to site_settings
+-- ============================================================
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS payment_bank_name TEXT;
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS payment_account_number TEXT;
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS payment_account_name TEXT;
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS promptpay_id TEXT;
+
+-- ============================================================
+-- MIGRATION: Add configurable hero text to site_settings
+-- ============================================================
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS hero_badge_text TEXT;
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS hero_title_line1 TEXT;
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS hero_title_line2 TEXT;
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS hero_description TEXT;
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS hero_cta_text TEXT;
+
+-- ============================================================
 -- DONE! 
 -- Next steps:
 -- 1. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local
 -- 2. Create your first admin user by setting role='admin' in the profiles table
 -- ============================================================
+

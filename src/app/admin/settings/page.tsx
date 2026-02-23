@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Upload, X, Image as ImageIcon, Save, Palette, Info } from 'lucide-react'
+import { Upload, X, Image as ImageIcon, Save, Palette, Info, CreditCard, Type } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
 
@@ -10,26 +10,38 @@ interface SiteSettings {
     hero_bg_url: string | null
     hero_bg_opacity: number
     logo_url: string | null
-    hero_image_url: string | null
+    payment_bank_name: string | null
+    payment_account_number: string | null
+    payment_account_name: string | null
+    promptpay_id: string | null
+    hero_badge_text: string | null
+    hero_title_line1: string | null
+    hero_title_line2: string | null
+    hero_description: string | null
+    hero_cta_text: string | null
 }
 
 export default function AdminSettingsPage() {
-    const [settings, setSettings] = useState<SiteSettings>({ hero_bg_url: null, hero_bg_opacity: 0.3, logo_url: null, hero_image_url: null })
+    const [settings, setSettings] = useState<SiteSettings>({ hero_bg_url: null, hero_bg_opacity: 0.3, logo_url: null, payment_bank_name: null, payment_account_number: null, payment_account_name: null, promptpay_id: null, hero_badge_text: null, hero_title_line1: null, hero_title_line2: null, hero_description: null, hero_cta_text: null })
+    const [paymentForm, setPaymentForm] = useState({ bank_name: '', account_number: '', account_name: '', promptpay_id: '' })
+    const [initialPayment, setInitialPayment] = useState({ bank_name: '', account_number: '', account_name: '', promptpay_id: '' })
+    const [heroText, setHeroText] = useState({ badge: '', title1: '', title2: '', desc: '', cta: '' })
+    const [initialHeroText, setInitialHeroText] = useState({ badge: '', title1: '', title2: '', desc: '', cta: '' })
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const supabase = createClient()
 
     const heroBgRef = useRef<HTMLInputElement>(null)
     const logoRef = useRef<HTMLInputElement>(null)
-    const heroImgRef = useRef<HTMLInputElement>(null)
+
 
     const [heroBgPreview, setHeroBgPreview] = useState<string | null>(null)
     const [logoPreview, setLogoPreview] = useState<string | null>(null)
-    const [heroImgPreview, setHeroImgPreview] = useState<string | null>(null)
+
 
     const [heroBgFile, setHeroBgFile] = useState<File | null>(null)
     const [logoFile, setLogoFile] = useState<File | null>(null)
-    const [heroImgFile, setHeroImgFile] = useState<File | null>(null)
+
 
     const [opacity, setOpacity] = useState(0.3)
     const [initialOpacity, setInitialOpacity] = useState(0.3)
@@ -45,10 +57,29 @@ export default function AdminSettingsPage() {
             setSettings(data)
             setHeroBgPreview(data.hero_bg_url)
             setLogoPreview(data.logo_url)
-            setHeroImgPreview(data.hero_image_url)
+
             const op = data.hero_bg_opacity ?? 0.3
             setOpacity(op)
             setInitialOpacity(op)
+
+            const pf = {
+                bank_name: data.payment_bank_name || '',
+                account_number: data.payment_account_number || '',
+                account_name: data.payment_account_name || '',
+                promptpay_id: data.promptpay_id || '',
+            }
+            setPaymentForm(pf)
+            setInitialPayment(pf)
+
+            const ht = {
+                badge: data.hero_badge_text || '',
+                title1: data.hero_title_line1 || '',
+                title2: data.hero_title_line2 || '',
+                desc: data.hero_description || '',
+                cta: data.hero_cta_text || '',
+            }
+            setHeroText(ht)
+            setInitialHeroText(ht)
         }
         setLoading(false)
     }
@@ -84,7 +115,9 @@ export default function AdminSettingsPage() {
         return urlData.publicUrl
     }
 
-    const hasChanges = heroBgFile || logoFile || heroImgFile || opacity !== initialOpacity
+    const paymentChanged = paymentForm.bank_name !== initialPayment.bank_name || paymentForm.account_number !== initialPayment.account_number || paymentForm.account_name !== initialPayment.account_name || paymentForm.promptpay_id !== initialPayment.promptpay_id
+    const heroTextChanged = heroText.badge !== initialHeroText.badge || heroText.title1 !== initialHeroText.title1 || heroText.title2 !== initialHeroText.title2 || heroText.desc !== initialHeroText.desc || heroText.cta !== initialHeroText.cta
+    const hasChanges = heroBgFile || logoFile || opacity !== initialOpacity || paymentChanged || heroTextChanged
 
     const handleSave = async () => {
         setSaving(true)
@@ -105,11 +138,18 @@ export default function AdminSettingsPage() {
                 const url = await uploadFile(logoFile, `logo.${ext}`)
                 if (url) updates.logo_url = url
             }
-
-            if (heroImgFile) {
-                const ext = heroImgFile.name.split('.').pop()
-                const url = await uploadFile(heroImgFile, `hero-image.${ext}`)
-                if (url) updates.hero_image_url = url
+            if (paymentChanged) {
+                updates.payment_bank_name = paymentForm.bank_name || null
+                updates.payment_account_number = paymentForm.account_number || null
+                updates.payment_account_name = paymentForm.account_name || null
+                updates.promptpay_id = paymentForm.promptpay_id || null
+            }
+            if (heroTextChanged) {
+                updates.hero_badge_text = heroText.badge || null
+                updates.hero_title_line1 = heroText.title1 || null
+                updates.hero_title_line2 = heroText.title2 || null
+                updates.hero_description = heroText.desc || null
+                updates.hero_cta_text = heroText.cta || null
             }
 
             const { error } = await supabase
@@ -122,7 +162,7 @@ export default function AdminSettingsPage() {
             toast.success('บันทึกการตั้งค่าแล้ว')
             setHeroBgFile(null)
             setLogoFile(null)
-            setHeroImgFile(null)
+
             loadSettings()
         } catch (err) {
             console.error(err)
@@ -132,7 +172,7 @@ export default function AdminSettingsPage() {
         }
     }
 
-    const clearImage = async (field: 'hero_bg_url' | 'logo_url' | 'hero_image_url') => {
+    const clearImage = async (field: 'hero_bg_url' | 'logo_url') => {
         const { error } = await supabase
             .from('site_settings')
             .update({ [field]: null, updated_at: new Date().toISOString() })
@@ -142,7 +182,7 @@ export default function AdminSettingsPage() {
             setSettings(s => ({ ...s, [field]: null }))
             if (field === 'hero_bg_url') { setHeroBgPreview(null); setHeroBgFile(null) }
             if (field === 'logo_url') { setLogoPreview(null); setLogoFile(null) }
-            if (field === 'hero_image_url') { setHeroImgPreview(null); setHeroImgFile(null) }
+
             toast.success('ลบรูปแล้ว')
         }
     }
@@ -153,8 +193,8 @@ export default function AdminSettingsPage() {
                 <div className="animate-pulse space-y-4">
                     <div className="h-8 bg-slate-200 rounded w-48" />
                     <div className="h-4 bg-slate-200 rounded w-64" />
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {[1, 2, 3].map(i => <div key={i} className="h-64 bg-slate-200 rounded-xl" />)}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {[1, 2].map(i => <div key={i} className="h-64 bg-slate-200 rounded-xl" />)}
                     </div>
                 </div>
             </div>
@@ -181,7 +221,7 @@ export default function AdminSettingsPage() {
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Hero Background */}
                 <div className="card p-5">
                     <h3 className="font-bold text-slate-800 mb-1">รูปพื้นหลัง Hero</h3>
@@ -267,32 +307,64 @@ export default function AdminSettingsPage() {
                     <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e.target.files?.[0], setLogoFile, setLogoPreview)} />
                 </div>
 
-                {/* Hero Image (the pet illustration) */}
-                <div className="card p-5">
-                    <h3 className="font-bold text-slate-800 mb-1">รูปประกอบ Hero</h3>
-                    <p className="text-xs text-slate-400 mb-4">รูปสัตว์เลี้ยง, แนะนำ PNG ไม่มีพื้นหลัง</p>
-                    <div
-                        className="aspect-square relative rounded-xl overflow-hidden border-2 border-dashed border-slate-200 bg-slate-50 cursor-pointer hover:border-amber-400 transition-colors group max-w-[250px] mx-auto"
-                        onClick={() => heroImgRef.current?.click()}
-                    >
-                        {heroImgPreview ? (
-                            <>
-                                <Image src={heroImgPreview} alt="Hero Image" fill className="object-contain p-2" />
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); clearImage('hero_image_url') }}
-                                    className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                                <ImageIcon className="w-8 h-8 mb-2" />
-                                <p className="text-sm">คลิกเพื่ออัปโหลด</p>
-                            </div>
-                        )}
+
+            </div>
+
+            {/* Payment Settings */}
+            <div className="card p-5 mt-6">
+                <h3 className="font-bold text-slate-800 mb-1 flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-amber-600" />
+                    ตั้งค่าการชำระเงิน
+                </h3>
+                <p className="text-xs text-slate-400 mb-4">ข้อมูลจะแสดงในหน้าชำระเงินของลูกค้า</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">ชื่อธนาคาร</label>
+                        <input type="text" value={paymentForm.bank_name} onChange={e => setPaymentForm(f => ({ ...f, bank_name: e.target.value }))} className="input-field" placeholder="เช่น กสิกรไทย (KBANK)" />
                     </div>
-                    <input ref={heroImgRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e.target.files?.[0], setHeroImgFile, setHeroImgPreview)} />
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">เลขบัญชี</label>
+                        <input type="text" value={paymentForm.account_number} onChange={e => setPaymentForm(f => ({ ...f, account_number: e.target.value }))} className="input-field" placeholder="XXX-X-XXXXX-X" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">ชื่อบัญชี</label>
+                        <input type="text" value={paymentForm.account_name} onChange={e => setPaymentForm(f => ({ ...f, account_name: e.target.value }))} className="input-field" placeholder="เช่น Pet Story Club" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">เลข PromptPay (เบอร์โทร/บัตรปชช.)</label>
+                        <input type="text" value={paymentForm.promptpay_id} onChange={e => setPaymentForm(f => ({ ...f, promptpay_id: e.target.value }))} className="input-field" placeholder="08XXXXXXXX หรือ เลขบัตร 13 หลัก" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Hero Text Settings */}
+            <div className="card p-5 mt-6">
+                <h3 className="font-bold text-slate-800 mb-1 flex items-center gap-2">
+                    <Type className="w-5 h-5 text-amber-600" />
+                    ข้อความ Hero Section
+                </h3>
+                <p className="text-xs text-slate-400 mb-4">ข้อความที่แสดงบนหน้าแรก</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">ข้อความ Badge (แถบเล็กด้านบน)</label>
+                        <input type="text" value={heroText.badge} onChange={e => setHeroText(f => ({ ...f, badge: e.target.value }))} className="input-field" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">หัวข้อหลัก บรรทัดที่ 1</label>
+                        <input type="text" value={heroText.title1} onChange={e => setHeroText(f => ({ ...f, title1: e.target.value }))} className="input-field" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">หัวข้อหลัก บรรทัดที่ 2</label>
+                        <input type="text" value={heroText.title2} onChange={e => setHeroText(f => ({ ...f, title2: e.target.value }))} className="input-field" />
+                    </div>
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">คำอธิบาย</label>
+                        <input type="text" value={heroText.desc} onChange={e => setHeroText(f => ({ ...f, desc: e.target.value }))} className="input-field" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">ข้อความปุ่ม CTA</label>
+                        <input type="text" value={heroText.cta} onChange={e => setHeroText(f => ({ ...f, cta: e.target.value }))} className="input-field" />
+                    </div>
                 </div>
             </div>
 
@@ -310,18 +382,13 @@ export default function AdminSettingsPage() {
                     <div className="absolute inset-0 bg-black" style={{ opacity: heroBgPreview ? opacity : 0 }} />
                     <div className="relative flex items-center justify-between h-full px-8">
                         <div className="text-white">
-                            <h2 className="text-2xl font-bold">ทุกความสุข</h2>
-                            <p className="text-white/80 text-sm">สำหรับน้อง</p>
+                            <h2 className="text-2xl font-bold">{heroText.title1 || 'ทุกความสุข'}</h2>
+                            <p className="text-white/80 text-sm">{heroText.title2 || 'สำหรับน้อง'}</p>
                         </div>
                         <div className="flex items-center gap-4">
                             {logoPreview && (
                                 <div className="w-20 h-20 relative">
                                     <Image src={logoPreview} alt="Logo Preview" fill className="object-contain" />
-                                </div>
-                            )}
-                            {heroImgPreview && (
-                                <div className="w-32 h-32 relative">
-                                    <Image src={heroImgPreview} alt="Hero Preview" fill className="object-contain" />
                                 </div>
                             )}
                         </div>

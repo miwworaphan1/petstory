@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import AddToCartButton from './AddToCartButton'
-import { Package, Star, ChevronRight } from 'lucide-react'
+import { Package, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
@@ -109,15 +109,7 @@ export default async function ProductDetailPage({ params }: Props) {
                         )}
                         <h1 className="text-2xl lg:text-3xl font-bold text-slate-800 mt-2 mb-3">{product.name}</h1>
 
-                        {/* Stars */}
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="flex">
-                                {[...Array(5)].map((_, i) => (
-                                    <Star key={i} className={`w-4 h-4 ${i < 4 ? 'fill-amber-400 text-amber-400' : 'text-slate-200 fill-slate-200'}`} />
-                                ))}
-                            </div>
-                            <span className="text-sm text-slate-500">4.0 (รีวิว)</span>
-                        </div>
+
 
                         {/* Price */}
                         <div className="flex items-center gap-3 mb-6">
@@ -151,7 +143,7 @@ export default async function ProductDetailPage({ params }: Props) {
                         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {[
                                 { icon: '🚚', title: 'จัดส่งรวดเร็ว', desc: '1-3 วันทำการ' },
-                                { icon: '🔒', title: 'ปลอดภัย 100%', desc: 'ชำระเงินซิเคียว' },
+                                { icon: '🔒', title: 'ปลอดภัย 100%', desc: 'ระบบชำระเงินที่ปลอดภัย' },
                             ].map(item => (
                                 <div key={item.title} className="flex items-center gap-3 p-3 bg-amber-100 rounded-xl">
                                     <span className="text-xl">{item.icon}</span>

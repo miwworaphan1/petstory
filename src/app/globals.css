@@ -26,6 +26,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -33,6 +34,7 @@ body {
   color: var(--text-primary);
   background: var(--surface);
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 @layer base {

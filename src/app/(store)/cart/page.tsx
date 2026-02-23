@@ -20,11 +20,15 @@ export default function CartPage() {
     const fetchCart = async () => {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { router.push('/login'); return }
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('cart_items')
             .select('*, products(*, categories(*), product_images(*))')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
+        if (error) {
+            console.error('Cart fetch error:', error)
+            toast.error('ไม่สามารถโหลดตะกร้าได้: ' + error.message)
+        }
         setItems((data as any) || [])
         setItemCount(data?.length || 0)
         setLoading(false)

@@ -7,23 +7,34 @@ import { useCartStore } from '@/store/cartStore'
 import { Upload, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
+import { generatePromptPayQR } from '@/lib/promptpayQR'
 import type { CartItem } from '@/types/database'
 
 const PAYMENT_METHODS = [
-    { value: 'bank_transfer', label: 'โอนเงินผ่านธนาคาร', icon: '🏦' },
     { value: 'promptpay', label: 'PromptPay', icon: '📱' },
+    { value: 'bank_transfer', label: 'โอนเงินผ่านธนาคาร', icon: '🏦' },
 ]
 
 const PROVINCES = ['กรุงเทพมหานคร', 'เชียงใหม่', 'เชียงราย', 'นนทบุรี', 'ปทุมธานี', 'สมุทรปราการ', 'ชลบุรี', 'ระยอง', 'ขอนแก่น', 'อุดรธานี', 'นครราชสีมา', 'ภูเก็ต', 'สงขลา', 'สุราษฎร์ธานี', 'อื่นๆ']
+
+interface PaymentSettings {
+    payment_bank_name: string | null
+    payment_account_number: string | null
+    payment_account_name: string | null
+    promptpay_id: string | null
+}
 
 export default function CheckoutPage() {
     const [items, setItems] = useState<CartItem[]>([])
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
-    const [paymentMethod, setPaymentMethod] = useState('bank_transfer')
+    const [paymentMethod, setPaymentMethod] = useState('promptpay')
     const [slipFile, setSlipFile] = useState<File | null>(null)
     const [slipPreview, setSlipPreview] = useState<string | null>(null)
     const [form, setForm] = useState({ name: '', phone: '', address_line: '', district: '', province: 'กรุงเทพมหานคร', postal_code: '', notes: '' })
+    const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({ payment_bank_name: null, payment_account_number: null, payment_account_name: null, promptpay_id: null })
+    const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+    const [qrLoading, setQrLoading] = useState(false)
     const { setItemCount } = useCartStore()
     const router = useRouter()
     const supabase = createClient()
@@ -33,17 +44,32 @@ export default function CheckoutPage() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) { router.push('/login'); return }
 
-            const [{ data: cartData }, { data: profile }] = await Promise.all([
+            const [{ data: cartData }, { data: profile }, { data: settings }] = await Promise.all([
                 supabase.from('cart_items').select('*, products(*, product_images(*))').eq('user_id', user.id),
                 supabase.from('profiles').select('full_name, phone').eq('id', user.id).single(),
+                supabase.from('site_settings').select('payment_bank_name, payment_account_number, payment_account_name, promptpay_id').eq('id', 'main').single(),
             ])
             if (!cartData?.length) { toast.error('ตะกร้าว่างเปล่า'); router.push('/cart'); return }
             setItems((cartData as any) || [])
             if (profile) setForm(f => ({ ...f, name: profile.full_name || '', phone: profile.phone || '' }))
+            if (settings) setPaymentSettings(settings)
             setLoading(false)
         }
         init()
     }, [])
+
+    const total = items.reduce((sum, item) => sum + ((item as any).products?.price || 0) * item.quantity, 0)
+
+    // Generate QR code when PromptPay is selected and total changes
+    useEffect(() => {
+        if (paymentMethod === 'promptpay' && paymentSettings.promptpay_id && total > 0) {
+            setQrLoading(true)
+            generatePromptPayQR(paymentSettings.promptpay_id, total)
+                .then(url => setQrDataUrl(url))
+                .catch(() => setQrDataUrl(null))
+                .finally(() => setQrLoading(false))
+        }
+    }, [paymentMethod, paymentSettings.promptpay_id, total])
 
     const handleSlipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -52,8 +78,6 @@ export default function CheckoutPage() {
             setSlipPreview(URL.createObjectURL(file))
         }
     }
-
-    const total = items.reduce((sum, item) => sum + ((item as any).products?.price || 0) * item.quantity, 0)
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -175,16 +199,50 @@ export default function CheckoutPage() {
                                     ))}
                                 </div>
 
-                                {/* Bank Info */}
-                                <div className="p-4 bg-blue-50 rounded-xl mb-4">
-                                    <p className="font-semibold text-blue-800 text-sm mb-2">ข้อมูลการโอนเงิน</p>
-                                    <div className="space-y-1 text-sm text-blue-700">
-                                        <p>ธนาคาร: กสิกรไทย (KBANK)</p>
-                                        <p>เลขบัญชี: <strong>XXX-X-XXXXX-X</strong></p>
-                                        <p>ชื่อบัญชี: <strong>Pet Story Club</strong></p>
-                                        <p className="font-bold text-amber-700 mt-2">ยอดโอน: ฿{total.toLocaleString('th-TH')}</p>
+                                {/* PromptPay QR Code */}
+                                {paymentMethod === 'promptpay' && (
+                                    <div className="p-4 bg-blue-50 rounded-xl mb-4">
+                                        <p className="font-semibold text-blue-800 text-sm mb-3">สแกน QR Code เพื่อชำระเงิน</p>
+                                        {paymentSettings.promptpay_id ? (
+                                            <div className="flex flex-col items-center">
+                                                {qrLoading ? (
+                                                    <div className="w-[200px] h-[200px] flex items-center justify-center">
+                                                        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                                    </div>
+                                                ) : qrDataUrl ? (
+                                                    <div className="bg-white rounded-xl p-3 shadow-sm">
+                                                        <img src={qrDataUrl} alt="PromptPay QR Code" className="w-[200px] h-[200px]" />
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-red-500 text-sm">ไม่สามารถสร้าง QR Code ได้</p>
+                                                )}
+                                                <p className="text-blue-700 text-sm mt-2">
+                                                    PromptPay: <strong>{paymentSettings.promptpay_id}</strong>
+                                                </p>
+                                                <p className="font-bold text-amber-700 mt-1 text-lg">ยอดชำระ: ฿{total.toLocaleString('th-TH')}</p>
+                                            </div>
+                                        ) : (
+                                            <p className="text-slate-500 text-sm text-center">ยังไม่ได้ตั้งค่า PromptPay กรุณาติดต่อร้านค้า</p>
+                                        )}
                                     </div>
-                                </div>
+                                )}
+
+                                {/* Bank Transfer Info */}
+                                {paymentMethod === 'bank_transfer' && (
+                                    <div className="p-4 bg-blue-50 rounded-xl mb-4">
+                                        <p className="font-semibold text-blue-800 text-sm mb-2">ข้อมูลการโอนเงิน</p>
+                                        {paymentSettings.payment_bank_name ? (
+                                            <div className="space-y-1 text-sm text-blue-700">
+                                                <p>ธนาคาร: {paymentSettings.payment_bank_name}</p>
+                                                <p>เลขบัญชี: <strong>{paymentSettings.payment_account_number}</strong></p>
+                                                <p>ชื่อบัญชี: <strong>{paymentSettings.payment_account_name}</strong></p>
+                                                <p className="font-bold text-amber-700 mt-2">ยอดโอน: ฿{total.toLocaleString('th-TH')}</p>
+                                            </div>
+                                        ) : (
+                                            <p className="text-slate-500 text-sm">ยังไม่ได้ตั้งค่าข้อมูลธนาคาร กรุณาติดต่อร้านค้า</p>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Slip Upload */}
                                 <div>
